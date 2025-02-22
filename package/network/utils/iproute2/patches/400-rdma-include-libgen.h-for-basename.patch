@@ -1,0 +1,10 @@
+--- a/rdma/rdma.h
++++ b/rdma/rdma.h
+@@ -17,6 +17,7 @@
+ #include <rdma/rdma_netlink.h>
+ #include <rdma/rdma_user_cm.h>
+ #include <net/if_arp.h>
++#include <libgen.h>
+ 
+ #include "list.h"
+ #include "utils.h"
