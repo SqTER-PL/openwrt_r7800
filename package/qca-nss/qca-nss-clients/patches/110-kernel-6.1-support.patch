@@ -458,25 +458,3 @@
  
  	memset(dev->broadcast, 0xff, dev->addr_len);
  	memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
-diff --git a/nss_connmgr_tunipip6.c b/nss_connmgr_tunipip6.c
-index 78ca225..d58b317 100644
---- a/nss_connmgr_tunipip6.c
-+++ b/nss_connmgr_tunipip6.c
-@@ -142,10 +142,17 @@ static void nss_tunipip6_update_dev_stats(struct net_device *dev,
- 
- 	u64_stats_init(&stats.syncp);
- 	u64_stats_update_begin(&stats.syncp);
-+#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 1, 0))
-+	u64_stats_set(&stats.rx_packets, sync_stats->node_stats.rx_packets);
-+	u64_stats_set(&stats.rx_bytes, sync_stats->node_stats.rx_bytes);
-+	u64_stats_set(&stats.tx_packets, sync_stats->node_stats.tx_packets);
-+	u64_stats_set(&stats.tx_bytes, sync_stats->node_stats.tx_bytes);
-+#else
- 	stats.rx_packets = sync_stats->node_stats.rx_packets;
- 	stats.rx_bytes = sync_stats->node_stats.rx_bytes;
- 	stats.tx_packets = sync_stats->node_stats.tx_packets;
- 	stats.tx_bytes = sync_stats->node_stats.tx_bytes;
-+#endif
- 	u64_stats_update_end(&stats.syncp);
- #else
- 	struct nss_tunipip6_stats stats;
