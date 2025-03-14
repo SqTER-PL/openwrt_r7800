@@ -281,6 +281,7 @@ CONFIG_KERNEL_IPV6_PIMSM_V2=y
 CONFIG_KERNEL_IPV6_SEG6_LWTUNNEL=y
 # CONFIG_KERNEL_LWTUNNEL_BPF is not set
 # CONFIG_KERNEL_NET_L3_MASTER_DEV is not set
+# CONFIG_KERNEL_DCB is not set
 # CONFIG_KERNEL_XDP_SOCKETS is not set
 # CONFIG_KERNEL_PAGE_POOL is not set
 CONFIG_KERNEL_MPTCP=y
@@ -1822,6 +1823,7 @@ CONFIG_PACKAGE_libiwinfo-data=y
 # CONFIG_PACKAGE_ipq-wifi-edgecore_eap102 is not set
 # CONFIG_PACKAGE_ipq-wifi-edimax_cax1800 is not set
 # CONFIG_PACKAGE_ipq-wifi-linksys_homewrk is not set
+# CONFIG_PACKAGE_ipq-wifi-linksys_mr5500 is not set
 # CONFIG_PACKAGE_ipq-wifi-linksys_mr7350 is not set
 # CONFIG_PACKAGE_ipq-wifi-linksys_mx2000 is not set
 # CONFIG_PACKAGE_ipq-wifi-linksys_mx4200 is not set
@@ -2136,6 +2138,18 @@ CONFIG_PACKAGE_kmod-scsi-core=y
 # CONFIG_PACKAGE_kmod-scsi-generic is not set
 # CONFIG_PACKAGE_kmod-scsi-tape is not set
 # end of Block Devices
+
+#
+# Bluetooth Support
+#
+# CONFIG_PACKAGE_kmod-ath3k is not set
+# CONFIG_PACKAGE_kmod-bluetooth is not set
+# CONFIG_PACKAGE_kmod-bluetooth-6lowpan is not set
+# CONFIG_PACKAGE_kmod-btmrvl is not set
+# CONFIG_PACKAGE_kmod-btsdio is not set
+# CONFIG_PACKAGE_kmod-btusb is not set
+# CONFIG_PACKAGE_kmod-hci-uart is not set
+# end of Bluetooth Support
 
 #
 # CAN Support
@@ -2621,7 +2635,7 @@ CONFIG_PACKAGE_kmod-ifb=y
 # CONFIG_PACKAGE_kmod-ne2k-pci is not set
 # CONFIG_PACKAGE_kmod-net-selftests is not set
 # CONFIG_PACKAGE_kmod-niu is not set
-# CONFIG_PACKAGE_kmod-nss-ifb is not set
+CONFIG_PACKAGE_kmod-nss-ifb=y
 # CONFIG_PACKAGE_kmod-of-mdio is not set
 # CONFIG_PACKAGE_kmod-pcnet32 is not set
 # CONFIG_PACKAGE_kmod-phy-airoha-en8811h is not set
@@ -2650,61 +2664,30 @@ CONFIG_PACKAGE_kmod-qca-nss-drv=y
 #
 # Build Options
 #
-# CONFIG_NSS_DRV_BRIDGE_ENABLE is not set
-# CONFIG_NSS_DRV_C2C_ENABLE is not set
-# CONFIG_NSS_DRV_CAPWAP_ENABLE is not set
-# CONFIG_NSS_DRV_CLMAP_ENABLE is not set
-# CONFIG_NSS_DRV_CRYPTO_ENABLE is not set
-# CONFIG_NSS_DRV_DTLS_ENABLE is not set
-# CONFIG_NSS_DRV_EDMA_ENABLE is not set
-# CONFIG_NSS_DRV_GRE_ENABLE is not set
 CONFIG_NSS_DRV_IGS_ENABLE=y
-# CONFIG_NSS_DRV_IPSEC_ENABLE is not set
 # CONFIG_NSS_DRV_IPV4_REASM_ENABLE is not set
 CONFIG_NSS_DRV_IPV6_ENABLE=y
 # CONFIG_NSS_DRV_IPV6_REASM_ENABLE is not set
-# CONFIG_NSS_DRV_L2TP_ENABLE is not set
-# CONFIG_NSS_DRV_LAG_ENABLE is not set
-# CONFIG_NSS_DRV_MAPT_ENABLE is not set
-# CONFIG_NSS_DRV_MATCH_ENABLE is not set
-# CONFIG_NSS_DRV_MIRROR_ENABLE is not set
-# CONFIG_NSS_DRV_OAM_ENABLE is not set
-# CONFIG_NSS_DRV_PORTID_ENABLE is not set
-# CONFIG_NSS_DRV_PPE_ENABLE is not set
+CONFIG_NSS_DRV_L2TP_ENABLE=y
 CONFIG_NSS_DRV_PPPOE_ENABLE=y
 CONFIG_NSS_DRV_PPTP_ENABLE=y
-# CONFIG_NSS_DRV_PVXLAN_ENABLE is not set
-# CONFIG_NSS_DRV_QRFS_ENABLE is not set
-# CONFIG_NSS_DRV_QVPN_ENABLE is not set
-# CONFIG_NSS_DRV_RMNET_ENABLE is not set
 CONFIG_NSS_DRV_SHAPER_ENABLE=y
-# CONFIG_NSS_DRV_SJACK_ENABLE is not set
-# CONFIG_NSS_DRV_TLS_ENABLE is not set
-# CONFIG_NSS_DRV_TRUSTSEC_ENABLE is not set
 # CONFIG_NSS_DRV_TSTAMP_ENABLE is not set
-# CONFIG_NSS_DRV_TUN6RD_ENABLE is not set
-# CONFIG_NSS_DRV_TUNIPIP6_ENABLE is not set
+CONFIG_NSS_DRV_TUN6RD_ENABLE=y
+CONFIG_NSS_DRV_TUNIPIP6_ENABLE=y
 CONFIG_NSS_DRV_VIRT_IF_ENABLE=y
-# CONFIG_NSS_DRV_VLAN_ENABLE is not set
-# CONFIG_NSS_DRV_VXLAN_ENABLE is not set
 CONFIG_NSS_DRV_WIFI_ENABLE=y
 # end of Configuration
 
-# CONFIG_PACKAGE_kmod-qca-nss-drv-clmapmgr is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-eogremgr is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-gre is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-igs is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-l2tpv2 is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-lag-mgr is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-netlink is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-portifmgr is not set
+CONFIG_PACKAGE_kmod-qca-nss-drv-igs=y
+CONFIG_PACKAGE_kmod-qca-nss-drv-l2tpv2=y
+CONFIG_PACKAGE_kmod-qca-nss-drv-netlink=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe=y
-# CONFIG_PACKAGE_kmod-qca-nss-drv-pptp is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-profile is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-pvxlanmgr is not set
+CONFIG_PACKAGE_kmod-qca-nss-drv-pptp=y
+CONFIG_PACKAGE_kmod-qca-nss-drv-profile=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-qdisc=y
-# CONFIG_PACKAGE_kmod-qca-nss-drv-tun6rd is not set
-# CONFIG_PACKAGE_kmod-qca-nss-drv-tunipip6 is not set
+CONFIG_PACKAGE_kmod-qca-nss-drv-tun6rd=y
+CONFIG_PACKAGE_kmod-qca-nss-drv-tunipip6=y
 CONFIG_PACKAGE_kmod-qca-nss-gmac=y
 # CONFIG_PACKAGE_kmod-qlcnic is not set
 # CONFIG_PACKAGE_kmod-r6040 is not set
@@ -2761,11 +2744,12 @@ CONFIG_PACKAGE_kmod-gre=y
 # CONFIG_PACKAGE_kmod-gre6 is not set
 # CONFIG_PACKAGE_kmod-inet-diag is not set
 # CONFIG_PACKAGE_kmod-inet-mptcp-diag is not set
-# CONFIG_PACKAGE_kmod-ip6-tunnel is not set
+CONFIG_PACKAGE_kmod-ip6-tunnel=y
 # CONFIG_PACKAGE_kmod-ipip is not set
 # CONFIG_PACKAGE_kmod-ipsec is not set
 CONFIG_PACKAGE_kmod-iptunnel=y
-# CONFIG_PACKAGE_kmod-iptunnel6 is not set
+CONFIG_PACKAGE_kmod-iptunnel4=y
+CONFIG_PACKAGE_kmod-iptunnel6=y
 # CONFIG_PACKAGE_kmod-jool-netfilter is not set
 CONFIG_PACKAGE_kmod-l2tp=y
 # CONFIG_PACKAGE_kmod-l2tp-eth is not set
@@ -2840,7 +2824,7 @@ CONFIG_PACKAGE_kmod-sched-core=y
 # CONFIG_PACKAGE_kmod-sched-skbprio is not set
 # CONFIG_PACKAGE_kmod-sctp is not set
 # CONFIG_PACKAGE_kmod-sctp-diag is not set
-# CONFIG_PACKAGE_kmod-sit is not set
+CONFIG_PACKAGE_kmod-sit=y
 CONFIG_PACKAGE_kmod-slhc=y
 # CONFIG_PACKAGE_kmod-slip is not set
 # CONFIG_PACKAGE_kmod-tcp-bbr is not set
@@ -2860,12 +2844,7 @@ CONFIG_PACKAGE_kmod-vxlan=y
 # Other modules
 #
 # CONFIG_PACKAGE_kmod-6lowpan is not set
-# CONFIG_PACKAGE_kmod-ath3k is not set
 # CONFIG_PACKAGE_kmod-bcma is not set
-# CONFIG_PACKAGE_kmod-bluetooth is not set
-# CONFIG_PACKAGE_kmod-bluetooth-6lowpan is not set
-# CONFIG_PACKAGE_kmod-btmrvl is not set
-# CONFIG_PACKAGE_kmod-btsdio is not set
 # CONFIG_PACKAGE_kmod-button-hotplug is not set
 # CONFIG_PACKAGE_kmod-echo is not set
 # CONFIG_PACKAGE_kmod-eeprom-93cx6 is not set
@@ -3334,7 +3313,6 @@ CONFIG_HAS_LUAJIT_ARCH=y
 #
 # Node.js
 #
-# CONFIG_PACKAGE_node is not set
 # CONFIG_PACKAGE_node-arduino-firmata is not set
 # CONFIG_PACKAGE_node-cylon is not set
 # CONFIG_PACKAGE_node-cylon-firmata is not set
@@ -3343,7 +3321,6 @@ CONFIG_HAS_LUAJIT_ARCH=y
 # CONFIG_PACKAGE_node-hid is not set
 # CONFIG_PACKAGE_node-homebridge is not set
 # CONFIG_PACKAGE_node-javascript-obfuscator is not set
-# CONFIG_PACKAGE_node-npm is not set
 # CONFIG_PACKAGE_node-serialport is not set
 # CONFIG_PACKAGE_node-serialport-bindings is not set
 # end of Node.js
@@ -4956,7 +4933,6 @@ CONFIG_PACKAGE_libuuid=y
 # CONFIG_PACKAGE_msgpack-c is not set
 # CONFIG_PACKAGE_mtdev is not set
 # CONFIG_PACKAGE_musl-fts is not set
-# CONFIG_PACKAGE_mxml is not set
 # CONFIG_PACKAGE_nspr is not set
 # CONFIG_PACKAGE_oath-pam is not set
 # CONFIG_PACKAGE_oniguruma is not set
@@ -6395,7 +6371,7 @@ CONFIG_PACKAGE_wpad-basic-wolfssl=m
 
 # CONFIG_PACKAGE_464xlat is not set
 # CONFIG_PACKAGE_6in4 is not set
-# CONFIG_PACKAGE_6rd is not set
+CONFIG_PACKAGE_6rd=y
 # CONFIG_PACKAGE_6to4 is not set
 # CONFIG_PACKAGE_UDPspeeder is not set
 # CONFIG_PACKAGE_aardvark-dns is not set
@@ -6438,6 +6414,7 @@ CONFIG_PACKAGE_adblock-fast=y
 # CONFIG_PACKAGE_cni-route-override is not set
 # CONFIG_PACKAGE_coap-server is not set
 # CONFIG_PACKAGE_conserver is not set
+# CONFIG_PACKAGE_conserver-ipmi is not set
 # CONFIG_PACKAGE_crowdsec is not set
 # CONFIG_PACKAGE_crowdsec-firewall-bouncer is not set
 # CONFIG_PACKAGE_cshark is not set
@@ -6460,6 +6437,7 @@ CONFIG_PACKAGE_adblock-fast=y
 # CONFIG_PACKAGE_fakepop is not set
 # CONFIG_PACKAGE_foolsm is not set
 # CONFIG_PACKAGE_fping is not set
+# CONFIG_PACKAGE_freeipmi-tools is not set
 # CONFIG_PACKAGE_fsh is not set
 # CONFIG_PACKAGE_generate-ipv6-address is not set
 # CONFIG_PACKAGE_gensio-bin is not set
@@ -6513,6 +6491,9 @@ CONFIG_PACKAGE_iw=y
 # CONFIG_PACKAGE_krb5-libs is not set
 # CONFIG_PACKAGE_krb5-server is not set
 # CONFIG_PACKAGE_krb5-server-extras is not set
+# CONFIG_PACKAGE_libfreeipmi is not set
+# CONFIG_PACKAGE_libipmiconsole is not set
+# CONFIG_PACKAGE_libipmidetect is not set
 # CONFIG_PACKAGE_libipset is not set
 # CONFIG_PACKAGE_libndp is not set
 # CONFIG_PACKAGE_linknx is not set
@@ -6585,6 +6566,7 @@ CONFIG_PACKAGE_odhcpd_ipv6only_ext_cer_id=0
 # CONFIG_PACKAGE_pcapplusplus is not set
 # CONFIG_PACKAGE_pen is not set
 # CONFIG_PACKAGE_phantap is not set
+# CONFIG_PACKAGE_phytool is not set
 # CONFIG_PACKAGE_pimbd is not set
 # CONFIG_PACKAGE_pingcheck is not set
 # CONFIG_PACKAGE_port-mirroring is not set

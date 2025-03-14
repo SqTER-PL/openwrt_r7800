@@ -1,33 +1,3 @@
-From 3acca4ecfe25a7d97e7cb820fd8c7c6324a1f318 Mon Sep 17 00:00:00 2001
-From: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
-Date: Tue, 18 Aug 2020 16:17:25 +0530
-Subject: [PATCH] ath11k : Add NSS redirect support
-
-Add NSS Redirect support for ath11k. Tested on ipq8074
-Most of the changes are similar to the one done for ath10k with
-minor changes to send to nss with eth header
-
-Redirect can be enabled by setting nss_redirect module param during
-mac80211 insmod followed by ecm start
-insmod mac80211.ko nss_redirect=1
-/etc/init.d/qca-nss-ecm start
-
-Check for ipv4_hash_hits counts in ipv4 stats and eth_rx
-in qca-nss-drv to check whether packets are redirected or not.
-
-Verified both in nwifi and ethernet mode by running tcp and udp
-traffic.
-
-Co-developed by: Sriram R <srirrama@codeaurora.org>
-Signed-off-by: Sriram R <srirrama@codeaurora.org>
-Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
----
- net/mac80211/ieee80211_i.h |  2 ++
- net/mac80211/iface.c       | 43 ++++++++++++++++++++++++++++++++
- net/mac80211/rx.c          | 61 +++++++++++++++++++++++++++++++++++++---------
- net/mac80211/tx.c          | 32 ++++++++++++++++++++++++
- 4 files changed, 126 insertions(+), 12 deletions(-)
-
 --- a/local-symbols
 +++ b/local-symbols
 @@ -32,6 +32,7 @@ LIB80211_CRYPT_CCMP=
@@ -40,7 +10,7 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
  MAC80211_RC_DEFAULT_MINSTREL=
 --- a/net/mac80211/Kconfig
 +++ b/net/mac80211/Kconfig
-@@ -19,6 +19,13 @@ comment "CFG80211 needs to be enabled fo
+@@ -19,6 +19,14 @@ comment "CFG80211 needs to be enabled fo
  
  if MAC80211 != n
  
@@ -51,28 +21,31 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
 +	This option enables support for NSS in boards
 +	like Netgear R7800.
 +
++
  config MAC80211_HAS_RC
  	bool
  
 --- a/net/mac80211/ieee80211_i.h
 +++ b/net/mac80211/ieee80211_i.h
-@@ -36,6 +36,10 @@
- #include "debug.h"
- #include "drop.h"
+@@ -38,6 +38,10 @@
+ 
+ extern const struct cfg80211_ops mac80211_config_ops;
  
 +#ifdef CPTCFG_MAC80211_NSS_SUPPORT
 +#include <nss_api_if.h>
 +#endif
 +
- extern const struct cfg80211_ops mac80211_config_ops;
- 
  struct ieee80211_local;
-@@ -1185,6 +1189,10 @@ struct ieee80211_sub_if_data {
+ struct ieee80211_mesh_fast_tx;
+ 
+@@ -1185,6 +1189,12 @@ struct ieee80211_sub_if_data {
  	} debugfs;
  #endif
  
 +#ifdef CPTCFG_MAC80211_NSS_SUPPORT
 +	struct nss_virt_if_handle *nssctx;
++	struct sk_buff_head rx_queue;
++	struct work_struct rx_work;
 +#endif
 +
  	/* must be last, dynamically sized area in this! */
@@ -80,38 +53,82 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
  };
 --- a/net/mac80211/iface.c
 +++ b/net/mac80211/iface.c
-@@ -27,6 +27,12 @@
- #include "wme.h"
- #include "rate.h"
- 
-+#ifdef CPTCFG_MAC80211_NSS_SUPPORT
-+bool nss_redirect = true;
-+module_param(nss_redirect, bool, 0644);
-+MODULE_PARM_DESC(nss_redirect, "module param to enable NSS Redirect; 1-enable, 0-disable");
-+#endif
-+
- /**
-  * DOC: Interface list locking
-  *
-@@ -776,6 +782,13 @@ static int ieee80211_stop(struct net_dev
- 		ieee80211_stop_mbssid(sdata);
- 	}
+@@ -779,6 +779,15 @@ static int ieee80211_stop(struct net_dev
+ 	wiphy_lock(sdata->local->hw.wiphy);
+ 	wiphy_work_cancel(sdata->local->hw.wiphy, &sdata->activate_links_work);
  
 +#ifdef CPTCFG_MAC80211_NSS_SUPPORT
 +	if (sdata->nssctx) {
++		cancel_work_sync(&sdata->rx_work);
++		skb_queue_purge(&sdata->rx_queue);
 +		nss_virt_if_destroy_sync(sdata->nssctx);
 +		sdata_info(sdata, "Destroyed NSS virtual interface\n");
 +	}
 +#endif
 +
- 	wiphy_lock(sdata->local->hw.wiphy);
- 	wiphy_work_cancel(sdata->local->hw.wiphy, &sdata->activate_links_work);
+ 	ieee80211_do_stop(sdata, true);
+ 	wiphy_unlock(sdata->local->hw.wiphy);
  
-@@ -1226,6 +1239,34 @@ void ieee80211_del_virtual_monitor(struc
+@@ -1226,6 +1235,89 @@ void ieee80211_del_virtual_monitor(struc
  	kfree(sdata);
  }
  
 +#ifdef CPTCFG_MAC80211_NSS_SUPPORT
++#define case_rtn_string(val) case val: return #val
++
++static const char *nss_tx_status_str(nss_tx_status_t status)
++{
++	switch (status) {
++		case_rtn_string(NSS_TX_SUCCESS);
++		case_rtn_string(NSS_TX_FAILURE);
++		case_rtn_string(NSS_TX_FAILURE_QUEUE);
++		case_rtn_string(NSS_TX_FAILURE_NOT_READY);
++		case_rtn_string(NSS_TX_FAILURE_TOO_LARGE);
++		case_rtn_string(NSS_TX_FAILURE_TOO_SHORT);
++		case_rtn_string(NSS_TX_FAILURE_NOT_SUPPORTED);
++		case_rtn_string(NSS_TX_FAILURE_BAD_PARAM);
++		case_rtn_string(NSS_TX_FAILURE_NOT_ENABLED);
++		case_rtn_string(NSS_TX_FAILURE_SYNC_BAD_PARAM);
++		case_rtn_string(NSS_TX_FAILURE_SYNC_TIMEOUT);
++		case_rtn_string(NSS_TX_FAILURE_SYNC_FW_ERR);
++	default:
++		return "Unknown NSS TX status";
++	}
++}
++
++static void netif_rx_nss_work(struct work_struct *work)
++{
++	int ret;
++	unsigned long flags;
++	struct sk_buff *skb;
++	struct sk_buff_head *list;
++	struct ieee80211_sub_if_data *sdata =
++	    container_of(work, struct ieee80211_sub_if_data, rx_work);
++
++	list = &sdata->rx_queue;
++	skb = skb_dequeue(list);
++
++	while (skb != NULL) {
++		skb_push(skb, ETH_HLEN);
++		ret = nss_virt_if_tx_buf(sdata->nssctx, skb);
++		if (unlikely(ret)) {
++			if (net_ratelimit()) {
++				sdata_err(sdata, "NSS TX failed with error: %s\n",
++					nss_tx_status_str(ret));
++			}
++			skb_pull(skb, ETH_HLEN);
++			netif_receive_skb(skb);
++		}
++
++		skb = skb_dequeue(list);
++	}
++
++	/* Check if we there are more packet to process and resched */
++	skb = skb_peek(list);
++	if (skb)
++		schedule_work(&sdata->rx_work);
++}
++
 +/* This callback is registered for nss redirect to receive packet exceptioned from nss in Rx path.
 + * When packet does not match any of the ecm rules is redirected back here.
 + */
@@ -142,21 +159,19 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
  /*
   * NOTE: Be very careful when changing this function, it must NOT return
   * an error on interface type changes that have been pre-checked, so most
-@@ -1456,6 +1497,19 @@ int ieee80211_do_open(struct wireless_de
+@@ -1456,6 +1548,17 @@ int ieee80211_do_open(struct wireless_de
  
  	ieee80211_recalc_ps(local);
  
 +#ifdef CPTCFG_MAC80211_NSS_SUPPORT
-+       sdata->nssctx = NULL;
-+       if (nss_redirect) {
-+               sdata->nssctx = nss_virt_if_create_sync(dev);
-+               if (sdata->nssctx) {
-+                       sdata_info(sdata, "Created a NSS virtual interface\n");
-+                       nss_virt_if_register(sdata->nssctx, receive_from_nss, sdata->dev);
-+               } else {
-+                       sdata_info(sdata, "Failed to create a NSS virtual interface\n");
-+               }
-+       }
++	sdata->nssctx = nss_virt_if_create_sync(dev);
++	if (sdata->nssctx) {
++		sdata_info(sdata, "Created a NSS virtual interface\n");
++		nss_virt_if_register(sdata->nssctx, receive_from_nss, sdata->dev);
++		skb_queue_head_init(&sdata->rx_queue);
++		INIT_WORK(&sdata->rx_work, &netif_rx_nss_work);
++	} else
++		sdata_err(sdata, "Failed to create a NSS virtual interface\n");
 +#endif
 +
  	set_bit(SDATA_STATE_RUNNING, &sdata->state);
@@ -164,67 +179,27 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
  	return 0;
 --- a/net/mac80211/rx.c
 +++ b/net/mac80211/rx.c
-@@ -2613,6 +2613,54 @@ static bool ieee80211_frame_allowed(stru
+@@ -2613,6 +2613,13 @@ static bool ieee80211_frame_allowed(stru
  	return true;
  }
  
-+#ifdef CPTCFG_MAC80211_NSS_SUPPORT
-+#define case_rtn_string(val) case val: return #val
-+
-+static const char *nss_tx_status_str(nss_tx_status_t status)
++static inline void netif_rx_nss(struct sk_buff *skb, struct ieee80211_sub_if_data *sdata)
 +{
-+	switch (status) {
-+		case_rtn_string(NSS_TX_SUCCESS);
-+		case_rtn_string(NSS_TX_FAILURE);
-+		case_rtn_string(NSS_TX_FAILURE_QUEUE);
-+		case_rtn_string(NSS_TX_FAILURE_NOT_READY);
-+		case_rtn_string(NSS_TX_FAILURE_TOO_LARGE);
-+		case_rtn_string(NSS_TX_FAILURE_TOO_SHORT);
-+		case_rtn_string(NSS_TX_FAILURE_NOT_SUPPORTED);
-+		case_rtn_string(NSS_TX_FAILURE_BAD_PARAM);
-+	default:
-+		return "Unknown NSS TX status";
-+	}
++	skb_queue_tail(&sdata->rx_queue, skb);
++
++	schedule_work(&sdata->rx_work);
 +}
-+
-+static void netif_rx_nss(struct ieee80211_rx_data *rx,
-+			 struct sk_buff *skb)
-+{
-+	struct ieee80211_sub_if_data *sdata = rx->sdata;
-+	int ret;
-+
-+	if (!sdata->nssctx)
-+		goto out;
-+
-+	/* NSS expects ethernet header in skb data so resetting here */
-+	skb_push(skb, ETH_HLEN);
-+	ret = nss_virt_if_tx_buf(sdata->nssctx, skb);
-+	if (ret) {
-+		if (net_ratelimit()) {
-+			sdata_err(sdata, "NSS TX failed with error: %s\n",
-+				  nss_tx_status_str(ret));
-+		}
-+		goto out;
-+	}
-+
-+	return;
-+out:
-+	if (rx->list)
-+		list_add_tail(&skb->list, rx->list);
-+	else
-+		netif_receive_skb(skb);
-+}
-+#endif
 +
  static void ieee80211_deliver_skb_to_local_stack(struct sk_buff *skb,
  						 struct ieee80211_rx_data *rx)
  {
-@@ -2653,10 +2701,14 @@ static void ieee80211_deliver_skb_to_loc
+@@ -2653,10 +2660,15 @@ static void ieee80211_deliver_skb_to_loc
  			ether_addr_copy(ehdr->h_dest, sdata->vif.addr);
  
  		/* deliver to local stack */
 +#ifdef CPTCFG_MAC80211_NSS_SUPPORT
-+		netif_rx_nss(rx, skb);
++		if (sdata->nssctx) 
++			netif_rx_nss(skb, sdata);
 +#else
  		if (rx->list)
  			list_add_tail(&skb->list, rx->list);
@@ -234,6 +209,27 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
  	}
  }
  
+@@ -4768,6 +4780,7 @@ static void ieee80211_rx_8023(struct iee
+ 			      int orig_len)
+ {
+ 	struct ieee80211_sta_rx_stats *stats;
++	struct ieee80211_sub_if_data *sdata = rx->sdata;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
+ 	struct sta_info *sta = rx->sta;
+ 	struct link_sta_info *link_sta;
+@@ -4864,7 +4877,12 @@ static void ieee80211_rx_8023(struct iee
+ 
+ 	/* deliver to local stack */
+ 	skb->protocol = eth_type_trans(skb, fast_rx->dev);
++#ifdef CPTCFG_MAC80211_NSS_SUPPORT
++		if (sdata->nssctx) 
++			netif_rx_nss(skb, sdata);
++#else
+ 	ieee80211_deliver_skb_to_local_stack(skb, rx);
++#endif
+ }
+ 
+ static bool ieee80211_invoke_fast_rx(struct ieee80211_rx_data *rx,
 --- a/net/mac80211/tx.c
 +++ b/net/mac80211/tx.c
 @@ -4495,6 +4495,35 @@ static void ieee80211_mlo_multicast_tx(s
